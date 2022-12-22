@@ -54,7 +54,7 @@ def main():
                     enemy_y += 1.5
 
             # bounding box collision, arrow to enemy
-            if arrow_position[0] - (tile_size // 2) <= enemy_x <= arrow_position[0] + tile_size and \
+            if arrow_position[0] - tile_size <= enemy_x <= arrow_position[0] + (tile_size // 2) and \
                     arrow_position[1] - tile_size <= enemy_y <= arrow_position[1] + (tile_size // 2):
                 arrow_position = [0, 0]
                 enemies.remove(enemy)
