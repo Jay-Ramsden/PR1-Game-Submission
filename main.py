@@ -41,7 +41,7 @@ def main():
             x_dist = enemy_x - player_x
             y_dist = enemy_y - player_y
 
-            """if abs(x_dist) > 15:
+            if abs(x_dist) > 15:
                 if x_dist > 0:
                     enemy_x -= 1.5
                 else:
@@ -51,7 +51,7 @@ def main():
                 if y_dist > 0:
                     enemy_y -= 1.5
                 else:
-                    enemy_y += 1.5"""
+                    enemy_y += 1.5
 
             # bounding box collision, arrow to enemy
             if arrow_position[0] - (tile_size // 2) <= enemy_x <= arrow_position[0] + tile_size and \
