@@ -41,7 +41,7 @@ def main():
             x_dist = enemy_x - player_x
             y_dist = enemy_y - player_y
 
-            if abs(x_dist) > 15:
+            """if abs(x_dist) > 15:
                 if x_dist > 0:
                     enemy_x -= 1.5
                 else:
@@ -51,11 +51,11 @@ def main():
                 if y_dist > 0:
                     enemy_y -= 1.5
                 else:
-                    enemy_y += 1.5
+                    enemy_y += 1.5"""
 
-            # bounding box collision, arrow to enemy - feels weirdly generous, could be a bug
+            # bounding box collision, arrow to enemy
             if arrow_position[0] - (tile_size // 2) <= enemy_x <= arrow_position[0] + tile_size and \
-                    arrow_position[1] - (tile_size // 2) <= enemy_y <= arrow_position[1] + tile_size:
+                    arrow_position[1] - tile_size <= enemy_y <= arrow_position[1] + (tile_size // 2):
                 arrow_position = [0, 0]
                 enemies.remove(enemy)
             else:
