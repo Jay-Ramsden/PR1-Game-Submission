@@ -24,13 +24,13 @@ def main():
 
     while not done:
         screen.fill((0, 0, 0))  # clear the screen - if any black peeks through, something's probably not rendering
-        # TODO: add a proper background (6 rows trees, 3 rows)
+        # add a proper background
 
         if spawn_timer == 100 or not random.randint(0, 100):
             spawns = [[0, tile_size * 7], [tile_size * 7, 0], [tile_size * 14, tile_size * 7],
                       [tile_size * 7, tile_size * 14]]
             spawn = random.randint(0, 3)
-            # TODO: add offsets for enemy spawns
+            # add offsets for enemy spawns
             enemies.append(spawns[spawn])
             spawn_timer = 0
 
