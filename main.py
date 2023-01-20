@@ -88,9 +88,6 @@ def moveEnemy(enemy_x, enemy_y, player_x, player_y, wave, action_timer):
         if abs(y_dist) > tile_size * 3 // 5:
             enemy_y += -1.5 if y_dist > 0 else 1.5
 
-        if action_timer**2 > random.randint(60**2, 300**2):
-            action_timer = 0  # fire an arrow
-
     elif wave == 3:
         if action_timer < 600:
             if abs(x_dist) > tile_size * 3 // 5:
@@ -121,15 +118,13 @@ def moveEnemy(enemy_x, enemy_y, player_x, player_y, wave, action_timer):
                 enemy_y += -1.5 if y_dist > 0 else 1.5
 
     elif wave == 5:
-        if action_timer <= 300:
-            enemy_y -= 1
+        if action_timer <= 150:
+            enemy_y -= 2
         else:
-            enemy_y += 1
-            if action_timer == 600:
+            enemy_y += 2
+            if action_timer == 300:
                 action_timer = 0
-        if random.randint(1, 300) == 1:
-            pass  # spawn a laser
-        pass  # demilich
+
     action_timer += 1
     return enemy_x, enemy_y, action_timer
 
@@ -184,11 +179,12 @@ def main():
     living_enemies = []
     spawn_timer = 0
     spawns = 0
-    wave_totals = [0, 15, 10, 8, 4, 1]
-    wave = 1
+    wave_totals = [0, 20, 15, 8, 4, 1]
+    wave = 2
     wave_length = wave_totals[wave]
     wave_done = False
     health_pools = [0, 1, 2, 5, 10, 30]
+    enemy_arrows = []
 
     # "constants" for enemies
     ENEMY_X = 0
@@ -203,14 +199,14 @@ def main():
         screen.blit(img, (0, 0))  # blits start at the top corner
 
         spawn_timer += 1
-        if spawns < wave_length and (spawn_timer == 60 + (wave * 40) or not random.randint(0, 600)):  # spawn an enemy
+        if spawns < wave_length and (spawn_timer == 40 + (wave * 30) or not random.randint(0, 600)):  # spawn an enemy
             spawn_points = [  # each line holds the data for a wave, each item holds a spawn point
                 [],
                 [[tile_size, tile_size * 3], [tile_size * 2, tile_size * 13], [tile_size * 14, tile_size * 7]],
-                [[tile_size, tile_size * 3]],
-                [[tile_size, tile_size * 3]],
+                [[tile_size, tile_size * 3], [tile_size * 13, tile_size * 3], [tile_size, tile_size * 11], [tile_size * 13, tile_size * 11]],
+                [[tile_size * 3, tile_size * 3], [tile_size * 4, tile_size * 11], [tile_size * 11, tile_size * 4], [tile_size * 10, tile_size * 10]],
                 [[tile_size, tile_size * 9 // 2], [tile_size, tile_size * 19 // 2], [tile_size * 13, tile_size * 9 // 2], [tile_size * 13, tile_size * 19 // 2]],
-                [[tile_size, tile_size * 3]]
+                [[tile_size * 11, tile_size * 11]]
             ]
             new_spawn = spawn_points[wave]  # get the spawn points for the wave
             new_spawn = new_spawn[random.randint(0, len(new_spawn) - 1)]  # and pick a random one from them
@@ -225,7 +221,7 @@ def main():
             img = pygame.image.load("blue.jpg")
             img = pygame.transform.scale(img, (tile_size, tile_size))
 
-            # make the enemy move - will move into a function to refactor
+            # make the enemy move
             enemy[ENEMY_X], enemy[ENEMY_Y], enemy[SPECIAL_TIMER] = moveEnemy(enemy[ENEMY_X], enemy[ENEMY_Y], player_x, player_y, wave, enemy[SPECIAL_TIMER])
 
             x_dist = enemy[ENEMY_X] - player_x
@@ -243,12 +239,26 @@ def main():
                     player_hp -= 1
                     enemy[HP] += 1
 
+                # roll to fire a projectile if the enemy can (skeletons + the demilich)
+                if random.randint(0, 150) == 0 and wave % 3 == 2 and \
+                        (x_dist ** 2 + y_dist ** 2) ** 0.5 > tile_size * 7 // 2:  # fire an arrow / laser
+                    new_arrow = [int(enemy[ENEMY_X]) + tile_size // 2, int(enemy[ENEMY_Y]) + tile_size // 2]
+                    if wave == 5:
+                        new_arrow += [-12, 0]  # x and y velocities
+                    else:
+                        enemy[SPECIAL_TIMER] = 0
+                        total_dist = (x_dist ** 2 + y_dist ** 2) ** 0.5
+                        x_dist /= -0.2 * total_dist
+                        y_dist /= -0.2 * total_dist
+                        new_arrow += [int(x_dist), int(y_dist)]
+                    enemy_arrows.append(new_arrow)
+
             # if the arrow / magic hits the enemy, damage the enemy and remove the arrow / magic
             for i in range(len(magic_positions)):
                 if magic_positions[i][0] - tile_size <= enemy[ENEMY_X] <= magic_positions[i][0] + (tile_size // 2) and \
                         magic_positions[i][1] - tile_size <= enemy[ENEMY_Y] <= magic_positions[i][1] + (tile_size // 2):
                     magic_positions[i] = [0, 0]
-                    if i+1 != len(magic_positions()):
+                    if i+1 != len(magic_positions):  # "if what hit this wasn't an arrow"
                         enemy[HP] -= 1
                     enemy[HP] -= 1
             if enemy[HP] <= 0:
@@ -264,6 +274,25 @@ def main():
 
             else:
                 screen.blit(img, (int(enemy[ENEMY_X]), int(enemy[ENEMY_Y])))
+
+        img = pygame.image.load("yellow.jpg")
+        img = pygame.transform.scale(img, (tile_size // 2, tile_size // 2))
+        if enemy_arrows:
+            hit_arrows = []
+            for i in range(len(enemy_arrows)):
+                enemy_arrows[i][0] += enemy_arrows[i][2]
+                enemy_arrows[i][1] += enemy_arrows[i][3]
+                if enemy_arrows[i][0] - tile_size <= player_x <= enemy_arrows[i][0] + (tile_size // 2) and \
+                        enemy_arrows[i][1] - tile_size <= player_y <= enemy_arrows[i][1] + (tile_size // 2):
+                    hit_arrows.append(enemy_arrows[i])
+                    player_hp -= (immunity_frames == 0)
+                    immunity_frames = 75
+                    done = (player_hp <= 0)
+                else:
+                    screen.blit(img, (enemy_arrows[i][0], enemy_arrows[i][1]))
+            for arrow in hit_arrows:
+                enemy_arrows.remove(arrow)
+
         arrow_position = magic_positions[len(magic_positions)-1]
         magic_positions.pop(len(magic_positions)-1)
         if immunity_frames:
@@ -289,6 +318,7 @@ def main():
                     player_x, player_y = waveTransition(player_x, player_y, wave, tile_size, backgrounds, screen, clock)
                     wave += 1
                     wave_length = wave_totals[wave]
+                    spawn_timer = -20
                     spawns = 0
                     wave_done = False
             else:
@@ -337,7 +367,9 @@ def main():
         if player_x < tile_size * 1.5:
             player_x = int(tile_size * 1.5)
         if player_x > display_width - tile_size * 2.5:
-            player_x = int(display_height - tile_size * 2.5)
+            player_x = int(display_width - tile_size * 2.5)
+        if player_x > display_width // 2 and wave == 5:
+            player_x = int(display_width // 2)
 
         if player_y < tile_size * 1.5:
             player_y = int(tile_size * 1.5)
@@ -404,9 +436,14 @@ def main():
             else:
                 magic_positions[3][1] += 10
 
+            hit_magic = 0
             for i in range(4):
                 if magic_positions[i][1]:
                     screen.blit(img, (int(magic_positions[i][0]), int(magic_positions[i][1])))
+                else:
+                    hit_magic += 1
+            if hit_magic == 4:
+                magic_positions = []
 
         # update at end of frame
         pygame.display.flip()
