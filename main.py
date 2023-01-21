@@ -6,14 +6,18 @@ import pygame
 import random
 
 
-def smallRender(player_x, player_y, wave, tile_size, bg, screen, clock):  # render and load the bg + aster each frame
+def smallRender(player_x, player_y, tile_size, bg, screen, clock):  # render and load the bg + aster each frame
     screen.fill((0, 0, 0))
-    img = pygame.image.load(bg[wave])
+    img = pygame.image.load(bg)
     img = pygame.transform.scale(img, (tile_size * 15, tile_size * 15))
     screen.blit(img, (0, 0))
     img = pygame.image.load("red.jpg")
     img = pygame.transform.scale(img, (tile_size, tile_size))
     screen.blit(img, (int(player_x), int(player_y)))
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            exit()
     pygame.display.flip()
     clock.tick(60)
 
@@ -28,7 +32,7 @@ def waveTransition(player_x, player_y, wave, tile_size, bg, screen, clock):
     if wave >= 0:
         while player_y < tile_size * 14:
             player_y += tile_size / 16
-            smallRender(player_x, player_y, wave, tile_size, bg, screen, clock)
+            smallRender(player_x, player_y, tile_size, bg[wave], screen, clock)
 
     # walk aster through the transition between areas
     if wave == 0:
@@ -36,22 +40,22 @@ def waveTransition(player_x, player_y, wave, tile_size, bg, screen, clock):
         player_y = tile_size * 7 // 2
         while player_x < tile_size * 14:
             player_x += tile_size / 16
-            smallRender(player_x, player_y, wave, tile_size, transition_backgrounds, screen, clock)
+            smallRender(player_x, player_y, tile_size, transition_backgrounds[wave], screen, clock)
     elif wave == 4:
         player_x = tile_size * 5
         player_y = 0
         while player_y < tile_size * 19 // 2:
             player_y += tile_size / 16
-            smallRender(player_x, player_y, wave, tile_size, transition_backgrounds, screen, clock)
+            smallRender(player_x, player_y, tile_size, transition_backgrounds[wave], screen, clock)
         while player_x < tile_size * 14:
             player_x += tile_size / 16
-            smallRender(player_x, player_y, wave, tile_size, transition_backgrounds, screen, clock)
+            smallRender(player_x, player_y, tile_size, transition_backgrounds[wave], screen, clock)
     else:
         player_x = tile_size * 7
         player_y = 0
         while player_y < tile_size * 14:
             player_y += tile_size / 16
-            smallRender(player_x, player_y, wave, tile_size, transition_backgrounds, screen, clock)
+            smallRender(player_x, player_y, tile_size, transition_backgrounds[wave], screen, clock)
 
     # move aster to the center of the new area
     wave += 1
@@ -61,12 +65,12 @@ def waveTransition(player_x, player_y, wave, tile_size, bg, screen, clock):
         while player_x < tile_size * 3:
             player_x += tile_size / 16
             player_y += tile_size / 16
-            smallRender(player_x, player_y, wave, tile_size, bg, screen, clock)
+            smallRender(player_x, player_y, tile_size, bg[wave], screen, clock)
     else:
         player_y = 0
         while player_y < tile_size * 7:
             player_y += tile_size / 16
-            smallRender(player_x, player_y, wave, tile_size, bg, screen, clock)
+            smallRender(player_x, player_y, tile_size, bg[wave], screen, clock)
     return player_x, player_y  # and return control to the player
 
 
@@ -95,15 +99,18 @@ def moveEnemy(enemy_x, enemy_y, player_x, player_y, wave, action_timer):
 
             if abs(y_dist) > tile_size * 3 // 5:
                 enemy_y += -1 if y_dist > 0 else 1
+
         elif action_timer == 600:
             enemy_x = random.randint(tile_size * 3, tile_size * 11)
             enemy_y = random.randint(tile_size * 3, tile_size * 11)
+
         elif action_timer == 900:
             action_timer = 0
 
     elif wave == 4:
         if action_timer == 0:
             action_timer = 600
+
         if action_timer < 600:
             if abs(x_dist) > tile_size * 3 // 5:
                 enemy_x += -1 if x_dist > 0 else 1
@@ -120,6 +127,7 @@ def moveEnemy(enemy_x, enemy_y, player_x, player_y, wave, action_timer):
     elif wave == 5:
         if action_timer <= 150:
             enemy_y -= 2
+
         else:
             enemy_y += 2
             if action_timer == 300:
@@ -127,6 +135,28 @@ def moveEnemy(enemy_x, enemy_y, player_x, player_y, wave, action_timer):
 
     action_timer += 1
     return enemy_x, enemy_y, action_timer
+
+
+def EndingCutscene(px, py, tile_size, bg, screen, clock):
+    while px != tile_size * 6 or py != tile_size * 6:
+        # can't do an if-elif-else with an augment, so multiply by the boolean on the else
+        px += tile_size / 16 if px < tile_size * 6 else (px > tile_size * 6) * tile_size / -16
+        py += tile_size / 16 if py < tile_size * 6 else (py > tile_size * 6) * tile_size / -16
+        smallRender(px, py, tile_size, bg, screen, clock)
+    while px < tile_size * 12:
+        px += tile_size / 32
+        smallRender(px, py, tile_size, bg, screen, clock)
+    while True:
+        screen.fill((0, 0, 0))
+        img = pygame.image.load("ending.png")
+        img = pygame.transform.scale(img, (tile_size * 15, tile_size * 15))
+        screen.blit(img, (0, 0))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+        pygame.display.flip()
+        clock.tick(60)
 
 
 def main():
@@ -160,7 +190,7 @@ def main():
     player_x = tile_size * 7
     player_y = tile_size * 7
     walk_speed = tile_size / 16
-    player_hp = 12
+    player_hp = 10
     max_hp = player_hp
     immunity_frames = 0
 
@@ -180,10 +210,10 @@ def main():
     spawn_timer = 0
     spawns = 0
     wave_totals = [0, 20, 15, 8, 4, 1]
-    wave = 2
+    wave = 5
     wave_length = wave_totals[wave]
     wave_done = False
-    health_pools = [0, 1, 2, 5, 10, 30]
+    health_pools = [0, 1, 2, 5, 10, 3]
     enemy_arrows = []
 
     # "constants" for enemies
@@ -199,7 +229,7 @@ def main():
         screen.blit(img, (0, 0))  # blits start at the top corner
 
         spawn_timer += 1
-        if spawns < wave_length and (spawn_timer == 40 + (wave * 30) or not random.randint(0, 600)):  # spawn an enemy
+        if spawns < wave_length and (spawn_timer == 40 + (wave * 30) or not random.randint(0, 600) or wave == 5):  # spawn an enemy
             spawn_points = [  # each line holds the data for a wave, each item holds a spawn point
                 [],
                 [[tile_size, tile_size * 3], [tile_size * 2, tile_size * 13], [tile_size * 14, tile_size * 7]],
@@ -239,19 +269,20 @@ def main():
                     player_hp -= 1
                     enemy[HP] += 1
 
-                # roll to fire a projectile if the enemy can (skeletons + the demilich)
-                if random.randint(0, 150) == 0 and wave % 3 == 2 and \
-                        (x_dist ** 2 + y_dist ** 2) ** 0.5 > tile_size * 7 // 2:  # fire an arrow / laser
-                    new_arrow = [int(enemy[ENEMY_X]) + tile_size // 2, int(enemy[ENEMY_Y]) + tile_size // 2]
-                    if wave == 5:
-                        new_arrow += [-12, 0]  # x and y velocities
-                    else:
-                        enemy[SPECIAL_TIMER] = 0
-                        total_dist = (x_dist ** 2 + y_dist ** 2) ** 0.5
-                        x_dist /= -0.2 * total_dist
-                        y_dist /= -0.2 * total_dist
-                        new_arrow += [int(x_dist), int(y_dist)]
-                    enemy_arrows.append(new_arrow)
+            # roll to fire a projectile if the enemy can (skeletons + the demilich)
+            if (random.randint(0, 100) == 0 or spawn_timer > 100) and wave % 3 == 2 and \
+                    (x_dist ** 2 + y_dist ** 2) ** 0.5 > tile_size * 7 // 2:  # fire an arrow / laser
+                new_arrow = [int(enemy[ENEMY_X]) + tile_size // 2, int(enemy[ENEMY_Y]) + tile_size // 2]
+                if wave == 5:
+                    new_arrow += [-12, 0]  # x and y velocities
+                    spawn_timer = 0
+                else:
+                    enemy[SPECIAL_TIMER] = 0
+                    total_dist = (x_dist ** 2 + y_dist ** 2) ** 0.5
+                    x_dist /= -0.2 * total_dist
+                    y_dist /= -0.2 * total_dist
+                    new_arrow += [int(x_dist), int(y_dist)]
+                enemy_arrows.append(new_arrow)
 
             # if the arrow / magic hits the enemy, damage the enemy and remove the arrow / magic
             for i in range(len(magic_positions)):
@@ -275,6 +306,7 @@ def main():
             else:
                 screen.blit(img, (int(enemy[ENEMY_X]), int(enemy[ENEMY_Y])))
 
+        # update and render any enemy projectiles
         img = pygame.image.load("yellow.jpg")
         img = pygame.transform.scale(img, (tile_size // 2, tile_size // 2))
         if enemy_arrows:
@@ -322,6 +354,8 @@ def main():
                     spawns = 0
                     wave_done = False
             else:
+                EndingCutscene(player_x, player_y, tile_size, backgrounds[wave], screen, clock)
+                print("done")
                 pass  # note to self: make a cutscene here of aster getting the bow
 
         # render aster's health
@@ -368,8 +402,8 @@ def main():
             player_x = int(tile_size * 1.5)
         if player_x > display_width - tile_size * 2.5:
             player_x = int(display_width - tile_size * 2.5)
-        if player_x > display_width // 2 and wave == 5:
-            player_x = int(display_width // 2)
+        if player_x > tile_size * 6 and wave == 5:
+            player_x = int(tile_size * 6)
 
         if player_y < tile_size * 1.5:
             player_y = int(tile_size * 1.5)
@@ -397,21 +431,21 @@ def main():
                 img = pygame.transform.scale(img, (tile_size // 2, tile_size // 2))
                 screen.blit(img, (int(arrow_position[0]), int(arrow_position[1])))
 
-        if magic_collected and not magic_positions:
-            if keys[pygame.K_SPACE]:
-                if magic_type == 4:
-                    player_hp += 2
-                    if player_hp > max_hp:
-                        player_hp = max_hp
-                elif magic_type == 5:
-                    for enemy in living_enemies:
-                        enemy[HP] -= 5
-                else:
-                    magic_positions = [[player_x + (tile_size // 4), player_y + (tile_size // 4)] for i in range(4)]
-                magic_type = -1
-                magic_collected = False
-                pass  # power ups will go here
+        # check if magic can be used
+        if keys[pygame.K_SPACE] and magic_collected and not magic_positions:
+            if magic_type == 4:
+                player_hp += 2
+                if player_hp > max_hp:
+                    player_hp = max_hp
+            elif magic_type == 5:
+                for enemy in living_enemies:
+                    enemy[HP] -= 5
+            else:
+                magic_positions = [[player_x + (tile_size // 4), player_y + (tile_size // 4)] for i in range(4)]
+            magic_type = -1
+            magic_collected = False
 
+        # render magic projectiles
         elif magic_positions:
             img = pygame.image.load("yellow.jpg")
             img = pygame.transform.scale(img, (tile_size // 2, tile_size // 2))
